@@ -29,13 +29,18 @@ import com.google.android.gms.maps.model.MarkerOptions;
 public class setLocationActivity extends FragmentActivity implements OnMapReadyCallback,
         GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener,
-        LocationListener {
+        LocationListener,
+        GoogleMap.OnMarkerClickListener,
+        GoogleMap.OnMarkerDragListener {
 
     private GoogleMap mMap;
     private GoogleApiClient client;
     private LocationRequest locationRequest;
     private Location lastLocation;
     private Marker currentLocationMarker;
+    int PROXIMITY_RADIUS = 10000;
+    double latitude, longitude;
+    double end_latitude, end_longitude;
     public static final int REQUEST_LOCATION_CODE = 99;
 
     @Override
@@ -86,17 +91,23 @@ public class setLocationActivity extends FragmentActivity implements OnMapReadyC
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (ContextCompat.checkSelfPermission(this,Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED){
+                buildGoogleApiClient();
+                mMap.setMyLocationEnabled(true);
+            }
+        }else {
             buildGoogleApiClient();
             mMap.setMyLocationEnabled(true);
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
         }
+        mMap.setOnMarkerClickListener(this);
+        mMap.setOnMarkerDragListener(this);
+
+    }
+
+    private void bulidGoogleApiClient() {
+        client = new GoogleApiClient.Builder(this).addConnectionCallbacks(this).addOnConnectionFailedListener(this).addApi(LocationServices.API).build();
+        client.connect();
 
     }
 
@@ -112,6 +123,8 @@ public class setLocationActivity extends FragmentActivity implements OnMapReadyC
 
     @Override
     public void onLocationChanged(Location location) {
+        latitude = location.getLatitude();
+        longitude = location.getLongitude();
         lastLocation = location;
 
         if(currentLocationMarker != null){
@@ -122,7 +135,8 @@ public class setLocationActivity extends FragmentActivity implements OnMapReadyC
 
         MarkerOptions markerOptions = new MarkerOptions();
         markerOptions.position(latlng);
-        markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ROSE));
+        //markerOptions.title("Current Location");
+        //markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ROSE));
 
         //currentLocationMarker = mMap.addMarker(markerOptions);
 
@@ -178,6 +192,29 @@ public class setLocationActivity extends FragmentActivity implements OnMapReadyC
 
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+
+    }
+
+    @Override
+    public boolean onMarkerClick(Marker marker) {
+        marker.setDraggable(true);
+        return false;
+    }
+
+    @Override
+    public void onMarkerDragStart(Marker marker) {
+
+    }
+
+    @Override
+    public void onMarkerDrag(Marker marker) {
+
+    }
+
+    @Override
+    public void onMarkerDragEnd(Marker marker) {
+        end_latitude = marker.getPosition().latitude;
+        end_longitude = marker.getPosition().longitude;
 
     }
 }
